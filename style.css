@@ -47,9 +47,10 @@ body {
     background-position: 0% 0%;
     animation: backgroundMove 30s ease infinite;
     border-radius: 20px;
-    margin: 20px;
+    margin: 0;
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 /* 响应式调整游戏容器 */
@@ -526,17 +527,28 @@ button:hover::after {
         padding: 14px 22px;
         font-size: 0.95rem;
     }
+    
+    #game-controls {
+        gap: 20px;
+    }
+    
+    #game-message {
+        font-size: 1.2rem;
+        padding: 15px 30px;
+        max-width: 400px;
+    }
 }
 
 @media (max-width: 480px) {
     h1 {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         margin-bottom: 15px;
     }
     
     #game-info {
-        font-size: 1rem;
+        font-size: 0.9rem;
         max-width: 300px;
+        padding: 10px 15px;
     }
     
     #tooth-model {
@@ -559,35 +571,131 @@ button:hover::after {
         flex-direction: column;
         align-items: center;
         gap: 10px;
+        width: 100%;
     }
     
     button {
         padding: 12px 25px;
         font-size: 0.9rem;
         width: 200px;
+        max-width: 100%;
     }
     
     #game-message {
         font-size: 1rem;
         text-align: center;
-        padding: 0 10px;
+        padding: 10px 20px;
+        max-width: 300px;
+        min-width: 200px;
+    }
+    
+    /* 排行榜和分数说明按钮 */
+    #leaderboard-icon,
+    #score-guide-icon {
+        padding: 6px;
+    }
+    
+    #leaderboard-icon span,
+    #score-guide-icon span {
+        font-size: 16px;
+    }
+    
+    #leaderboard {
+        width: 130px;
+        top: 50px;
+        right: 5px;
+    }
+    
+    #score-guide {
+        width: 160px;
+        bottom: 50px;
+        left: 5px;
     }
 }
 
 @media (max-width: 360px) {
     h1 {
-        font-size: 1.6rem;
+        font-size: 1.4rem;
+        margin-bottom: 10px;
+    }
+    
+    #game-container {
+        padding: 10px;
+        border-radius: 15px;
+    }
+    
+    #game-info {
+        font-size: 0.8rem;
+        max-width: 250px;
+        padding: 8px 12px;
+        gap: 6px;
+    }
+    
+    #game-info div {
+        flex: 1 1 70px;
+        padding: 5px 10px;
     }
     
     #tooth-model {
         width: 250px;
         height: 160px;
+        margin-bottom: 15px;
+        border-radius: 50px;
+    }
+    
+    .food-residue {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .cavity-bug {
+        width: 28px;
+        height: 28px;
     }
     
     button {
         padding: 10px 20px;
         font-size: 0.85rem;
         width: 180px;
+    }
+    
+    #game-message {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+        max-width: 250px;
+    }
+    
+    /* 排行榜和分数说明按钮 */
+    #leaderboard-icon,
+    #score-guide-icon {
+        padding: 5px;
+    }
+    
+    #leaderboard-icon span,
+    #score-guide-icon span {
+        font-size: 14px;
+    }
+    
+    #leaderboard {
+        width: 120px;
+        top: 45px;
+        right: 5px;
+    }
+    
+    #leaderboard h3,
+    #score-guide h3 {
+        font-size: 12px;
+    }
+    
+    #leaderboard-list,
+    #score-guide ul {
+        font-size: 10px;
+    }
+    
+    #score-guide {
+        width: 140px;
+        bottom: 45px;
+        left: 5px;
     }
 }
 

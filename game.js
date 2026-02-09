@@ -522,14 +522,31 @@ class CavityBugGame {
                 const maxX = this.toothModel.offsetWidth - 25 - padding;
                 const maxY = this.toothModel.offsetHeight - 25 - padding;
                 
+                let collided = false;
+                
                 if (x < padding || x > maxX) {
-                    residue.speedX = -residue.speedX * 0.8; // 增加一些阻尼，使反弹更自然
+                    // 碰撞后改变路线和方向，不仅仅是简单的反弹
+                    residue.speedX = -residue.speedX * (0.7 + Math.random() * 0.4); // 随机阻尼
+                    residue.speedY += (Math.random() - 0.5) * 1.0; // 随机改变Y方向速度
                     x = Math.max(padding, Math.min(maxX, x));
+                    collided = true;
                 }
                 
                 if (y < padding || y > maxY) {
-                    residue.speedY = -residue.speedY * 0.8; // 增加一些阻尼，使反弹更自然
+                    // 碰撞后改变路线和方向，不仅仅是简单的反弹
+                    residue.speedY = -residue.speedY * (0.7 + Math.random() * 0.4); // 随机阻尼
+                    residue.speedX += (Math.random() - 0.5) * 1.0; // 随机改变X方向速度
                     y = Math.max(padding, Math.min(maxY, y));
+                    collided = true;
+                }
+                
+                // 碰撞后增加一些额外的随机性，使移动轨迹更自然
+                if (collided) {
+                    // 随机改变速度方向
+                    if (Math.random() < 0.3) {
+                        residue.speedX += (Math.random() - 0.5) * 0.8;
+                        residue.speedY += (Math.random() - 0.5) * 0.8;
+                    }
                 }
                 
                 // 随机改变速度，使移动更有趣和流畅
@@ -551,6 +568,11 @@ class CavityBugGame {
                     residue.speedX = (Math.random() - 0.5) * 1.5 * speedFactor;
                     residue.speedY = (Math.random() - 0.5) * 1.5 * speedFactor;
                 }
+                
+                // 限制最大速度，确保后期不会太快
+                const maxSpeed = Math.min(2.5, 1.5 + (this.level * 0.1)); // 限制最大速度为2.5
+                residue.speedX = Math.max(-maxSpeed, Math.min(maxSpeed, residue.speedX));
+                residue.speedY = Math.max(-maxSpeed, Math.min(maxSpeed, residue.speedY));
                 
                 // 更新样式
                 residue.style.left = `${x}px`;
@@ -780,14 +802,39 @@ class CavityBugGame {
                 const maxX = this.toothModel.offsetWidth - bugWidth - padding;
                 const maxY = this.toothModel.offsetHeight - bugWidth - padding;
                 
+                let collided = false;
+                
                 if (x < padding || x > maxX) {
-                    bug.speedX = -bug.speedX * 0.8; // 增加一些阻尼，使反弹更自然
+                    // 碰撞后改变路线和方向，不仅仅是简单的反弹
+                    bug.speedX = -bug.speedX * (0.7 + Math.random() * 0.4); // 随机阻尼
+                    bug.speedY += (Math.random() - 0.5) * 1.0; // 随机改变Y方向速度
                     x = Math.max(padding, Math.min(maxX, x));
+                    collided = true;
                 }
                 
                 if (y < padding || y > maxY) {
-                    bug.speedY = -bug.speedY * 0.8; // 增加一些阻尼，使反弹更自然
+                    // 碰撞后改变路线和方向，不仅仅是简单的反弹
+                    bug.speedY = -bug.speedY * (0.7 + Math.random() * 0.4); // 随机阻尼
+                    bug.speedX += (Math.random() - 0.5) * 1.0; // 随机改变X方向速度
                     y = Math.max(padding, Math.min(maxY, y));
+                    collided = true;
+                }
+                
+                // 碰撞后增加一些额外的随机性，使移动轨迹更自然
+                if (collided) {
+                    // 随机改变速度方向
+                    if (Math.random() < 0.3) {
+                        if (bug.type === 'fast') {
+                            bug.speedX += (Math.random() - 0.5) * 0.6;
+                            bug.speedY += (Math.random() - 0.5) * 0.6;
+                        } else if (bug.type === 'tough') {
+                            bug.speedX += (Math.random() - 0.5) * 0.3;
+                            bug.speedY += (Math.random() - 0.5) * 0.3;
+                        } else {
+                            bug.speedX += (Math.random() - 0.5) * 0.4;
+                            bug.speedY += (Math.random() - 0.5) * 0.4;
+                        }
+                    }
                 }
                 
                 // 随机改变速度，使移动更有趣和流畅
@@ -1377,8 +1424,50 @@ class CavityBugGame {
         // 检查是否达到分数要求
         const requiredScore = this.getScoreRequirement();
         if (this.score < requiredScore) {
-            this.gameMessage.textContent = `分数不足！需要${requiredScore}分才能进入下一关。请继续努力！`;
+            // 分数不足，扣减生命值
+            this.lives--;
+            this.updateDisplay();
+            
+            // 播放生命值减少的音效
             this.playSound(this.buttonSound);
+            
+            // 创建生命值减少的视觉效果
+            const lifeLossEffect = document.createElement('div');
+            lifeLossEffect.style.position = 'absolute';
+            lifeLossEffect.style.left = `${this.toothModel.offsetWidth / 2 - 50}px`;
+            lifeLossEffect.style.top = `${this.toothModel.offsetHeight / 2 - 20}px`;
+            lifeLossEffect.style.fontSize = '30px';
+            lifeLossEffect.style.fontWeight = 'bold';
+            lifeLossEffect.style.color = 'red';
+            lifeLossEffect.style.animation = 'lifeLoss 1s ease-out forwards';
+            lifeLossEffect.textContent = '-1生命';
+            this.toothModel.appendChild(lifeLossEffect);
+            
+            // 添加生命值减少动画
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes lifeLoss {
+                    0% { transform: scale(0); opacity: 1; }
+                    50% { transform: scale(1.5); opacity: 0.8; }
+                    100% { transform: scale(1); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // 自动移除效果
+            setTimeout(() => {
+                lifeLossEffect.remove();
+                style.remove();
+            }, 1000);
+            
+            // 检查生命值是否耗尽
+            if (this.lives <= 0) {
+                this.gameOver('生命值耗尽！游戏结束！');
+                return;
+            }
+            
+            // 显示分数不足和扣生命值的提示
+            this.gameMessage.textContent = `分数不足！需要${requiredScore}分才能进入下一关。扣除1次生命，还剩${this.lives}次生命！`;
             return;
         }
         
