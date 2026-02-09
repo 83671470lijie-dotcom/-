@@ -26,6 +26,10 @@ class CavityBugGame {
         this.blankClickHandler = null;
         this.touchStartHandler = null;
         
+        // 武器使用状态
+        this.isUsingToothpasteGun = false;
+        this.isUsingToothbrushSword = false;
+        
         // 连击系统
         this.combo = 0;
         this.maxCombo = 0;
@@ -39,6 +43,9 @@ class CavityBugGame {
         this.createGameInfoElements();
         
         this.init();
+        
+        // 添加排行榜和分数说明的点击显示功能
+        this.initToggleControls();
     }
     
     createGameInfoElements() {
@@ -427,11 +434,25 @@ class CavityBugGame {
             residue.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
             residue.style.left = `${Math.random() * (this.toothModel.offsetWidth - 25)}px`;
             residue.style.top = `${Math.random() * (this.toothModel.offsetHeight - 25)}px`;
-            // 添加点击和触摸事件支持
-            residue.addEventListener('click', () => this.removeFoodResidue(residue));
+            // 添加点击和触摸事件支持（增加点击区域）
+            residue.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeFoodResidue(residue);
+            });
             residue.addEventListener('touchstart', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 this.removeFoodResidue(residue);
+            });
+            
+            // 增加点击区域的视觉反馈
+            residue.style.cursor = 'pointer';
+            residue.style.transition = 'transform 0.2s ease';
+            residue.addEventListener('mouseover', () => {
+                residue.style.transform = 'scale(1.1)';
+            });
+            residue.addEventListener('mouseout', () => {
+                residue.style.transform = 'scale(1)';
             });
             
             // 添加移动属性，根据关卡难度调整初始速度
@@ -541,7 +562,7 @@ class CavityBugGame {
         requestAnimationFrame(() => this.moveFoodResidues());
     }
     
-    removeFoodResidue(residue) {
+    removeFoodResidue(residue, isFromFoam = false) {
         if (!this.gameActive || this.isPaused) return;
         
         this.playSound(this.popSound);
@@ -557,8 +578,8 @@ class CavityBugGame {
         residue.remove();
         this.foodResidues = this.foodResidues.filter(r => r !== residue);
         
-        // 增加分数
-        const scoreGain = 10;
+        // 增加分数（牙膏泡沫枪击中只加1分）
+        const scoreGain = isFromFoam ? 1 : 10;
         this.score += scoreGain;
         this.updateDisplay();
         this.showScoreChange(scoreGain);
@@ -617,11 +638,25 @@ class CavityBugGame {
                 bug.health = 1;
             }
             
-            // 添加点击和触摸事件支持
-            bug.addEventListener('click', () => this.attackCavityBug(bug));
+            // 添加点击和触摸事件支持（增加点击区域）
+            bug.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.attackCavityBug(bug);
+            });
             bug.addEventListener('touchstart', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 this.attackCavityBug(bug);
+            });
+            
+            // 增加点击区域的视觉反馈
+            bug.style.cursor = 'pointer';
+            bug.style.transition = 'transform 0.2s ease';
+            bug.addEventListener('mouseover', () => {
+                bug.style.transform = 'scale(1.1)';
+            });
+            bug.addEventListener('mouseout', () => {
+                bug.style.transform = 'scale(1)';
             });
             
             // 添加嘴巴元素
@@ -907,7 +942,7 @@ class CavityBugGame {
         }
     }
     
-    attackCavityBug(bug) {
+    attackCavityBug(bug, isFromFoam = false) {
         if (!this.gameActive || this.isPaused) return;
         
         this.playSound(this.popSound);
@@ -928,12 +963,14 @@ class CavityBugGame {
             bug.remove();
             this.cavityBugs = this.cavityBugs.filter(b => b !== bug);
             
-            // 根据类型增加不同分数
-            let scoreValue = 50;
-            if (bug.type === 'fast') {
-                scoreValue = 70;
-            } else if (bug.type === 'tough') {
-                scoreValue = 100;
+            // 根据类型增加不同分数（牙膏泡沫枪击中只加1分）
+            let scoreValue = isFromFoam ? 1 : 50;
+            if (!isFromFoam) {
+                if (bug.type === 'fast') {
+                    scoreValue = 70;
+                } else if (bug.type === 'tough') {
+                    scoreValue = 100;
+                }
             }
             
             this.score += scoreValue;
@@ -961,8 +998,13 @@ class CavityBugGame {
     useToothpasteGun() {
         if (!this.gameActive || this.isPaused) return;
         
+        // 检查是否正在使用牙膏泡沫枪
+        if (this.isUsingToothpasteGun) {
+            return;
+        }
+        
         // 检查分数是否足够
-        const cost = 20;
+        const cost = 30; // 增加使用成本
         if (this.score < cost) {
             this.gameMessage.textContent = `分数不足！需要${cost}分才能使用牙膏泡沫枪。`;
             return;
@@ -974,6 +1016,9 @@ class CavityBugGame {
         this.showScoreChange(-cost);
         
         this.playSound(this.buttonSound);
+        
+        // 设置武器使用状态
+        this.isUsingToothpasteGun = true;
         
         // 提示玩家选择释放位置
         this.gameMessage.textContent = '点击屏幕选择牙膏泡沫枪释放位置！';
@@ -991,22 +1036,22 @@ class CavityBugGame {
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
             
-            // 创建牙膏泡沫效果，从点击位置向四周扩散
-            for (let i = 0; i < 10; i++) {
+            // 创建牙膏泡沫效果，从点击位置向四周扩散（减少泡沫数量）
+            for (let i = 0; i < 6; i++) {
                 setTimeout(() => {
                     const foam = document.createElement('div');
                     foam.className = 'foam';
                     foam.style.left = `${x}px`;
                     foam.style.top = `${y}px`;
-                    foam.style.width = `${Math.random() * 10 + 10}px`;
-                    foam.style.height = `${Math.random() * 10 + 10}px`;
+                    foam.style.width = `${Math.random() * 8 + 8}px`; // 缩小泡沫大小
+                    foam.style.height = `${Math.random() * 8 + 8}px`; // 缩小泡沫大小
                     foam.style.opacity = `${Math.random() * 0.5 + 0.5}`;
                     this.toothModel.appendChild(foam);
                     
-                    // 泡沫移动
-                    const angle = (Math.PI * 2 * i) / 10;
-                    const speedX = Math.cos(angle) * 3;
-                    const speedY = Math.sin(angle) * 3;
+                    // 泡沫移动（降低移动速度）
+                    const angle = (Math.PI * 2 * i) / 6;
+                    const speedX = Math.cos(angle) * 2; // 降低移动速度
+                    const speedY = Math.sin(angle) * 2; // 降低移动速度
                     let currentX = x;
                     let currentY = y;
                     
@@ -1031,11 +1076,15 @@ class CavityBugGame {
                     moveFoam();
                     
                     // 自动移除泡沫
-                    setTimeout(() => foam.remove(), 2000);
-                }, i * 100);
+                    setTimeout(() => foam.remove(), 1500); // 缩短泡沫存在时间
+                }, i * 150);
             }
             
-            this.gameMessage.textContent = '发射牙膏泡沫！';
+            // 重置武器使用状态
+            setTimeout(() => {
+                this.isUsingToothpasteGun = false;
+                this.gameMessage.textContent = '发射牙膏泡沫！';
+            }, 100);
         };
         
         // 添加事件监听器
@@ -1044,6 +1093,16 @@ class CavityBugGame {
             e.preventDefault();
             handleClick(e);
         });
+        
+        // 设置超时，防止用户长时间不点击导致武器无法使用
+        setTimeout(() => {
+            if (this.isUsingToothpasteGun) {
+                this.toothModel.removeEventListener('click', handleClick);
+                this.toothModel.removeEventListener('touchstart', handleClick);
+                this.isUsingToothpasteGun = false;
+                this.gameMessage.textContent = '';
+            }
+        }, 5000);
     }
     
     checkFoamCollision(foam) {
@@ -1059,8 +1118,8 @@ class CavityBugGame {
                 foamRect.right > residueRect.left && 
                 foamRect.top < residueRect.bottom && 
                 foamRect.bottom > residueRect.top) {
-                // 移除残渣
-                this.removeFoodResidue(residue);
+                // 移除残渣（牙膏泡沫枪击中只加1分）
+                this.removeFoodResidue(residue, true);
             }
         });
         
@@ -1076,14 +1135,19 @@ class CavityBugGame {
                 foamRect.right > bugRect.left && 
                 foamRect.top < bugRect.bottom && 
                 foamRect.bottom > bugRect.top) {
-                // 攻击蛀牙虫
-                this.attackCavityBug(bug);
+                // 攻击蛀牙虫（牙膏泡沫枪击中只加1分）
+                this.attackCavityBug(bug, true);
             }
         });
     }
     
     useToothbrushSword() {
         if (!this.gameActive || this.isPaused) return;
+        
+        // 检查是否正在使用牙刷剑
+        if (this.isUsingToothbrushSword) {
+            return;
+        }
         
         // 检查分数是否足够
         const cost = 30;
@@ -1098,6 +1162,9 @@ class CavityBugGame {
         this.showScoreChange(-cost);
         
         this.playSound(this.buttonSound);
+        
+        // 设置武器使用状态
+        this.isUsingToothbrushSword = true;
         
         // 提示玩家选择释放方向
         this.gameMessage.textContent = '点击屏幕选择牙刷剑释放方向！';
@@ -1195,9 +1262,11 @@ class CavityBugGame {
                 if (swordEffect) swordEffect.remove();
                 style.remove();
                 cancelAnimationFrame(animationFrame);
+                
+                // 重置武器使用状态
+                this.isUsingToothbrushSword = false;
+                this.gameMessage.textContent = '使用牙刷剑！';
             }, 600);
-            
-            this.gameMessage.textContent = '使用牙刷剑！';
         };
         
         // 添加事件监听器
@@ -1206,6 +1275,16 @@ class CavityBugGame {
             e.preventDefault();
             handleClick(e);
         });
+        
+        // 设置超时，防止用户长时间不点击导致武器无法使用
+        setTimeout(() => {
+            if (this.isUsingToothbrushSword) {
+                this.toothModel.removeEventListener('click', handleClick);
+                this.toothModel.removeEventListener('touchstart', handleClick);
+                this.isUsingToothbrushSword = false;
+                this.gameMessage.textContent = '';
+            }
+        }, 5000);
     }
     
     useSuperCleaner() {
@@ -1295,6 +1374,14 @@ class CavityBugGame {
     }
     
     nextLevel() {
+        // 检查是否达到分数要求
+        const requiredScore = this.getScoreRequirement();
+        if (this.score < requiredScore) {
+            this.gameMessage.textContent = `分数不足！需要${requiredScore}分才能进入下一关。请继续努力！`;
+            this.playSound(this.buttonSound);
+            return;
+        }
+        
         // 根据得分给予评价
         let evaluation = '';
         if (this.score >= 300) {
@@ -1392,6 +1479,28 @@ class CavityBugGame {
             scoreChange.remove();
             style.remove();
         }, 1000);
+    }
+    
+    initToggleControls() {
+        // 初始化排行榜和分数说明的切换控件
+        const leaderboardIcon = document.getElementById('leaderboard-icon');
+        const leaderboard = document.getElementById('leaderboard');
+        const scoreGuideIcon = document.getElementById('score-guide-icon');
+        const scoreGuide = document.getElementById('score-guide');
+        
+        // 点击排行榜图标显示/隐藏排行榜
+        if (leaderboardIcon && leaderboard) {
+            leaderboardIcon.addEventListener('click', () => {
+                leaderboard.style.display = leaderboard.style.display === 'none' ? 'block' : 'none';
+            });
+        }
+        
+        // 点击分数说明图标显示/隐藏分数说明
+        if (scoreGuideIcon && scoreGuide) {
+            scoreGuideIcon.addEventListener('click', () => {
+                scoreGuide.style.display = scoreGuide.style.display === 'none' ? 'block' : 'none';
+            });
+        }
     }
 }
 
